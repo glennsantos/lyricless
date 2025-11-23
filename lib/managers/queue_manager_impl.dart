@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'queue_manager.dart';
 import 'audio_processor.dart';
 import 'cache_manager.dart';
+import 'cache_manager_impl.dart';
 import '../models/audio_file.dart';
 import '../models/processing_task.dart';
 
