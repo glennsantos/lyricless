@@ -57,31 +57,35 @@ graph TB
 **Responsibility**: Discover, import, and manage local audio files
 
 **Interface**:
-```swift
-protocol LibraryManager {
-    func scanLocalFiles() async -> [AudioFile]
-    func importFile(url: URL) async throws -> AudioFile
-    func getMetadata(for file: AudioFile) -> Metadata?
-    func isDRMProtected(file: AudioFile) -> Bool
+```dart
+abstract class LibraryManager {
+  Future<List<AudioFile>> scanLocalFiles();
+  Future<AudioFile> importFile(String path);
+  Future<Metadata?> getMetadata(AudioFile file);
+  Future<bool> isDRMProtected(AudioFile file);
 }
 ```
 
 **Key Behaviors**:
-- Scans device storage using platform APIs (FileManager on iOS, MediaStore on Android)
+- **Mobile**: Scans device storage using platform APIs (FileManager on iOS, MediaStore on Android)
+- **Web**: Uses File System Access API or file picker for user-selected files
 - Filters supported formats: MP3, WAV, M4A, FLAC
 - Extracts ID3 tags for metadata display
-- Detects DRM protection using AVAsset.isPlayable (iOS) or MediaExtractor error codes (Android)
+- **Mobile**: Detects DRM protection using AVAsset.isPlayable (iOS) or MediaExtractor error codes (Android)
+- **Web**: Attempts to decode audio; DRM files will fail at decode stage
 
 ### 2. Audio Processor
 
 **Responsibility**: Execute AI-based vocal removal pipeline
 
 **Interface**:
-```swift
-protocol AudioProcessor {
-    func processAudio(input: AudioFile, 
-                     progressCallback: @escaping (Float) -> Void) async throws -> URL
-    func cancelProcessing(taskId: UUID)
+```dart
+abstract class AudioProcessor {
+  Future<String> processAudio(
+    AudioFile input,
+    void Function(double progress) progressCallback,
+  );
+  void cancelProcessing(String taskId);
 }
 ```
 
@@ -108,37 +112,40 @@ sequenceDiagram
 
 **Implementation Details**:
 - **Pre-Processing**: 
-  - Load audio using AVAudioFile (iOS) or AudioTrack (Android)
-  - Resample to 44.1kHz using AVAudioConverter / Resampler
-  - Generate spectrogram using vDSP (iOS) or KissFFT (Android)
+  - **Mobile**: Load audio using AVAudioFile (iOS) or AudioTrack (Android)
+  - **Web**: Load audio using Web Audio API AudioContext.decodeAudioData()
+  - Resample to 44.1kHz using platform-specific resampler
+  - Generate spectrogram using FFT (vDSP on iOS, KissFFT on Android, Web Audio API on web)
   - Normalize input to [-1, 1] range
   
 - **Inference**:
-  - iOS: CoreML with MLModel, utilize Neural Engine via MLComputeUnits.all
-  - Android: TensorFlow Lite with NNAPI delegate for GPU/NPU acceleration
+  - **iOS**: CoreML with MLModel, utilize Neural Engine via MLComputeUnits.all (via platform channel)
+  - **Android**: TensorFlow Lite with NNAPI delegate for GPU/NPU acceleration
+  - **Web**: TensorFlow.js with WebGL backend for GPU acceleration
   - Model input: Float32 spectrogram [batch, freq_bins, time_frames, channels]
   - Model output: Float32 mask [batch, freq_bins, time_frames, channels]
   
 - **Post-Processing**:
   - Apply soft mask: instrumental_spec = input_spec * mask
-  - Inverse STFT using vDSP.DFT (iOS) or custom IFFT (Android)
-  - Write to WAV file using AVAssetWriter (iOS) or AudioRecord (Android)
+  - Inverse STFT using platform-specific IFFT
+  - **Mobile**: Write to WAV file using AVAssetWriter (iOS) or AudioRecord (Android)
+  - **Web**: Create Blob from audio data, store in Cache API
 
 ### 3. Queue Manager
 
 **Responsibility**: Manage playback queue and trigger look-ahead processing
 
 **Interface**:
-```swift
-protocol QueueManager {
-    var currentTrack: AudioFile? { get }
-    var nextTrack: AudioFile? { get }
-    var queue: [AudioFile] { get set }
-    
-    func enqueue(_ file: AudioFile)
-    func skip()
-    func shuffle()
-    func setRepeatMode(_ mode: RepeatMode)
+```dart
+abstract class QueueManager {
+  AudioFile? get currentTrack;
+  AudioFile? get nextTrack;
+  List<AudioFile> get queue;
+  
+  void enqueue(AudioFile file);
+  void skip();
+  void shuffle();
+  void setRepeatMode(RepeatMode mode);
 }
 ```
 
@@ -164,17 +171,18 @@ ON_SKIP:
 **Responsibility**: Store and retrieve processed instrumental files with LRU eviction
 
 **Interface**:
-```swift
-protocol CacheManager {
-    func getCachedInstrumental(for file: AudioFile) -> URL?
-    func storeInstrumental(url: URL, for file: AudioFile) async throws
-    func evictOldEntries() async
-    func getCacheSize() -> Int64
+```dart
+abstract class CacheManager {
+  Future<String?> getCachedInstrumental(AudioFile file);
+  Future<void> storeInstrumental(String path, AudioFile file);
+  Future<void> evictOldEntries();
+  Future<int> getCacheSize();
 }
 ```
 
 **Storage Strategy**:
-- Location: Application cache directory (Library/Caches on iOS, getCacheDir() on Android)
+- **Mobile**: Application cache directory (Library/Caches on iOS, getCacheDir() on Android)
+- **Web**: IndexedDB for metadata, Cache API for audio files
 - Naming: SHA256 hash of original file path + ".wav"
 - Metadata DB tracks: file_hash, last_played_date, file_size, original_path
 
@@ -192,17 +200,17 @@ ON_CACHE_FULL or ON_LOW_STORAGE:
 **Responsibility**: Control audio playback with seamless transitions
 
 **Interface**:
-```swift
-protocol PlaybackManager {
-    func play(file: AudioFile) async throws
-    func pause()
-    func resume()
-    func seek(to position: TimeInterval)
-    func setVolume(_ volume: Float)
-    
-    var isPlaying: Bool { get }
-    var currentTime: TimeInterval { get }
-    var duration: TimeInterval { get }
+```dart
+abstract class PlaybackManager {
+  Future<void> play(AudioFile file);
+  void pause();
+  void resume();
+  void seek(Duration position);
+  void setVolume(double volume);
+  
+  bool get isPlaying;
+  Duration get currentTime;
+  Duration get duration;
 }
 ```
 
@@ -220,54 +228,92 @@ ON_PLAY_REQUESTED(file):
 ```
 
 **Platform-Specific Players**:
-- **iOS**: AVAudioEngine with AVAudioPlayerNode for precise control
-- **Android**: ExoPlayer (Media3) with custom MediaSource for local files
+- **Flutter**: `just_audio` package with platform-specific backends
+  - iOS: AVAudioEngine backend
+  - Android: ExoPlayer backend
+- Unified API across platforms with consistent behavior
 
 ## Data Models
 
 ### AudioFile
-```swift
-struct AudioFile: Identifiable {
-    let id: UUID
-    let url: URL
-    let title: String
-    let artist: String?
-    let album: String?
-    let duration: TimeInterval
-    let format: AudioFormat
-    let isDRMProtected: Bool
-    let albumArtwork: Data?
+```dart
+class AudioFile {
+  final String id;
+  final String path;
+  final String title;
+  final String? artist;
+  final String? album;
+  final Duration duration;
+  final AudioFormat format;
+  final bool isDRMProtected;
+  final Uint8List? albumArtwork;
+  
+  AudioFile({
+    required this.id,
+    required this.path,
+    required this.title,
+    this.artist,
+    this.album,
+    required this.duration,
+    required this.format,
+    required this.isDRMProtected,
+    this.albumArtwork,
+  });
 }
 
 enum AudioFormat {
-    case mp3, wav, m4a, flac
+  mp3,
+  wav,
+  m4a,
+  flac,
 }
 ```
 
 ### CacheEntry
-```swift
-struct CacheEntry {
-    let fileHash: String
-    let instrumentalURL: URL
-    let originalPath: String
-    let fileSize: Int64
-    let lastPlayed: Date
-    let createdAt: Date
+```dart
+class CacheEntry {
+  final String fileHash;
+  final String instrumentalPath;
+  final String originalPath;
+  final int fileSize;
+  final DateTime lastPlayed;
+  final DateTime createdAt;
+  
+  CacheEntry({
+    required this.fileHash,
+    required this.instrumentalPath,
+    required this.originalPath,
+    required this.fileSize,
+    required this.lastPlayed,
+    required this.createdAt,
+  });
 }
 ```
 
 ### ProcessingTask
-```swift
-struct ProcessingTask {
-    let id: UUID
-    let audioFile: AudioFile
-    let status: TaskStatus
-    let progress: Float
-    let startTime: Date
+```dart
+class ProcessingTask {
+  final String id;
+  final AudioFile audioFile;
+  final TaskStatus status;
+  final double progress;
+  final DateTime startTime;
+  
+  ProcessingTask({
+    required this.id,
+    required this.audioFile,
+    required this.status,
+    required this.progress,
+    required this.startTime,
+  });
 }
 
 enum TaskStatus {
-    case queued, processing, completed, cancelled, failed
+  queued,
+  processing,
+  completed,
+  cancelled,
+  failed,
 }
 ```
 
@@ -275,15 +321,22 @@ enum TaskStatus {
 
 ### Error Types
 
-```swift
-enum VocalRemoverError: Error {
-    case unsupportedFormat
-    case drmProtected
-    case processingFailed(reason: String)
-    case insufficientStorage
-    case modelLoadFailed
-    case audioDecodeFailed
-    case cacheWriteFailed
+```dart
+class VocalRemoverError implements Exception {
+  final String message;
+  final ErrorType type;
+  
+  VocalRemoverError(this.type, this.message);
+}
+
+enum ErrorType {
+  unsupportedFormat,
+  drmProtected,
+  processingFailed,
+  insufficientStorage,
+  modelLoadFailed,
+  audioDecodeFailed,
+  cacheWriteFailed,
 }
 ```
 
@@ -350,44 +403,59 @@ enum VocalRemoverError: Error {
 
 ## Platform-Specific Considerations
 
-### iOS Implementation
+### Flutter Cross-Platform Implementation
 
-**Frameworks**:
-- SwiftUI for UI
-- CoreML for inference
-- AVFoundation for audio I/O
-- SwiftData for metadata persistence
+**Framework Stack**:
+- Flutter 3.16+ for cross-platform UI (iOS, Android, Web)
+- Dart 3.0+ for business logic
+- Platform channels for native integration (mobile)
+- Web APIs and WASM for web platform
 
-**Background Processing**:
-- Use `DispatchQueue.global(qos: .userInitiated)` for processing
-- Request extended background time using `beginBackgroundTask` if app enters background
+**Key Flutter Packages**:
+- `tflite_flutter` / `tflite_flutter_web` - TensorFlow Lite inference across platforms
+- `just_audio` / `just_audio_web` - Audio playback with platform-specific backends
+- `file_picker` - Local file selection (mobile and web)
+- `path_provider` - Access to cache directories (mobile)
+- `sqflite` / `idb_shim` - Database for metadata (mobile uses SQLite, web uses IndexedDB)
+- `flutter_isolate` - Background processing without blocking UI (mobile)
 
-**Neural Engine Optimization**:
-- Set `MLModelConfiguration.computeUnits = .all` to enable Neural Engine
-- Use Float16 precision for model weights
+**Platform-Specific Integration**:
 
-### Android Implementation
+**iOS**:
+- Use platform channels to access CoreML for optimal Neural Engine performance
+- Fallback to TFLite if CoreML integration is complex
+- AVAudioEngine via MethodChannel for low-latency playback
+- Background processing via `DispatchQueue` through platform channel
 
-**Frameworks**:
-- Jetpack Compose for UI
-- TensorFlow Lite for inference
-- ExoPlayer (Media3) for playback
-- Room Database for metadata
+**Android**:
+- TFLite with NNAPI delegate via `tflite_flutter`
+- ExoPlayer integration through `just_audio` package
+- Foreground Service for background processing via platform channel
+- MediaStore access for file scanning
 
-**Background Processing**:
-- Use Foreground Service with notification during processing
-- WorkManager for cache eviction tasks
+**Web**:
+- TensorFlow.js via `tflite_flutter_web` for in-browser inference
+- Web Audio API through `just_audio_web` for playback
+- File System Access API for local file import
+- IndexedDB for cache storage and metadata
+- Web Workers for background processing without blocking UI
+- Cache API for storing processed audio files
+- No native file system access - uses browser storage APIs
 
-**NNAPI Optimization**:
-- Create Interpreter with `NnApiDelegate` for hardware acceleration
-- Handle fallback to CPU if NNAPI unavailable
+**Background Processing Strategy**:
+- **Mobile**: Use `compute()` function for isolate-based processing
+- **Web**: Use Web Workers for parallel processing
+- Platform channels for native background tasks when needed (mobile only)
+- Maintain UI responsiveness with async/await patterns across all platforms
 
 ## Security and Privacy
 
-- All processing occurs on-device; no data transmitted to servers
-- Cache stored in app-private directory, inaccessible to other apps
+- All processing occurs on-device/in-browser; no data transmitted to servers
+- **Mobile**: Cache stored in app-private directory, inaccessible to other apps
+- **Web**: Data stored in browser's IndexedDB and Cache API, isolated per origin
 - No user accounts or authentication required
 - No analytics or telemetry collection in MVP
+- **Web**: Users must explicitly grant file access via file picker (no automatic scanning)
 
 ## Future Enhancements (Post-MVP)
 
