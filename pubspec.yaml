@@ -1,0 +1,52 @@
+name: lyricless
+description: A local vocal remover app with cross-platform support
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Audio processing and playback
+  tflite_flutter: ^0.10.4
+  just_audio: ^0.9.36
+  flutter_audio_metadata: ^0.1.0
+
+  # File handling
+  file_picker: ^6.1.1
+  path_provider: ^2.1.1
+
+  # Database and storage
+  sqflite: ^2.3.0
+  idb_shim: ^2.4.1
+
+  # State management
+  flutter_riverpod: ^2.4.9
+
+  # Utilities
+  crypto: ^3.0.3
+  fftea: ^1.0.0
+  logger: ^2.0.2+1
+  battery_plus: ^5.0.2
+  shared_preferences: ^2.2.2
+
+  # UI
+  cupertino_icons: ^1.0.6
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.1
+  mockito: ^5.4.4
+  build_runner: ^2.4.7
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/models/
+
+  # Platform-specific configuration will be added as needed

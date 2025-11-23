@@ -1,0 +1,7 @@
+tensorflow==2.14.0
+torch==2.1.0
+torchaudio==2.1.0
+spleeter==2.4.0
+librosa==0.10.1
+numpy==1.24.3
+tensorflowjs==4.13.0
