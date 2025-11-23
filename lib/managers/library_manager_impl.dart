@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_audio_metadata/flutter_audio_metadata.dart';
+import 'package:flutter_media_metadata/flutter_media_metadata.dart';
 import 'package:crypto/crypto.dart';
 import 'dart:convert';
 
@@ -120,7 +120,7 @@ class LibraryManagerImpl implements LibraryManager {
           'artwork': null,
         };
       } else {
-        // Mobile: Use flutter_audio_metadata
+        // Mobile: Use flutter_media_metadata
         if (file.path == null) {
           return {};
         }
@@ -129,7 +129,9 @@ class LibraryManagerImpl implements LibraryManager {
 
         return {
           'title': metadata.trackName,
-          'artist': metadata.trackArtistNames?.join(', '),
+          'artist': metadata.trackArtistNames?.isNotEmpty == true
+              ? metadata.trackArtistNames!.join(', ')
+              : null,
           'album': metadata.albumName,
           'duration': metadata.trackDuration != null
               ? Duration(milliseconds: metadata.trackDuration!)

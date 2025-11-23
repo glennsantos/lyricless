@@ -13,7 +13,7 @@ dependencies:
   # Audio processing and playback
   tflite_flutter: ^0.10.4
   just_audio: ^0.9.36
-  flutter_audio_metadata: ^0.1.0
+  flutter_media_metadata: ^1.0.0
 
   # File handling
   file_picker: ^6.1.1
