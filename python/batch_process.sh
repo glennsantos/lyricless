@@ -56,7 +56,7 @@ find "$TARGET_DIR" -name "*.mp3" -not -name "*_instrumental.mp3" | while read -r
     fi
 
     # Brief sleep to ensure all output is flushed before next iteration
-    sleep 0.5
+    sleep 2
 done
 
 echo ""
