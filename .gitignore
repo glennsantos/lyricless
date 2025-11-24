@@ -43,3 +43,9 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Python
+python/venv/
+__pycache__/
+python/pretrained_models/
+python/conversion_log.txt
