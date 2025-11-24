@@ -4,7 +4,7 @@ A command-line tool that removes vocals from audio files using the existing Sple
 
 ```
 cd /Users/aryeh/dev/lyricless/python
-./venv/bin/python vocal_remover_cli.py <mp3_file_path>
+./batch_process.sh  <musicfolder>
 ```
 
 Files Created
