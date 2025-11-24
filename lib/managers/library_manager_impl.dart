@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_media_metadata/flutter_media_metadata.dart';
 import 'package:crypto/crypto.dart';
 import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'library_manager.dart';
 import '../models/audio_file.dart';
@@ -15,8 +16,54 @@ class LibraryManagerImpl implements LibraryManager {
   final List<AudioFile> _files = [];
   final StreamController<List<AudioFile>> _libraryController =
       StreamController<List<AudioFile>>.broadcast();
+  bool _isInitialized = false;
+  
+  static const String _libraryStorageKey = 'lyricless_library';
 
   static const List<String> _supportedFormats = ['mp3', 'wav', 'm4a', 'flac'];
+
+  /// Initialize the library by loading from storage
+  Future<void> initialize() async {
+    if (_isInitialized) return;
+    await _loadLibrary();
+    _isInitialized = true;
+  }
+
+  /// Load library from persistent storage
+  Future<void> _loadLibrary() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final libraryJson = prefs.getString(_libraryStorageKey);
+      
+      if (libraryJson != null) {
+        final List<dynamic> libraryList = jsonDecode(libraryJson);
+        _files.clear();
+        _files.addAll(
+          libraryList.map((json) => AudioFile.fromJson(json)).toList(),
+        );
+        _libraryController.add(List.from(_files));
+        debugPrint('Loaded ${_files.length} files from storage');
+      }
+    } catch (e) {
+      debugPrint('Failed to load library from storage: $e');
+      // Don't throw - just start with empty library
+    }
+  }
+
+  /// Save library to persistent storage
+  Future<void> _saveLibrary() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final libraryJson = jsonEncode(
+        _files.map((file) => file.toJson()).toList(),
+      );
+      await prefs.setString(_libraryStorageKey, libraryJson);
+      debugPrint('Saved ${_files.length} files to storage');
+    } catch (e) {
+      debugPrint('Failed to save library to storage: $e');
+      // Don't throw - library is still in memory
+    }
+  }
 
   @override
   Future<List<AudioFile>> importFiles() async {
@@ -49,6 +96,7 @@ class LibraryManagerImpl implements LibraryManager {
       }
 
       _libraryController.add(List.from(_files));
+      await _saveLibrary();
       return importedFiles;
     } catch (e, stackTrace) {
       throw VocalRemoverError.unknown(
@@ -215,6 +263,7 @@ class LibraryManagerImpl implements LibraryManager {
   Future<void> removeFile(String id) async {
     _files.removeWhere((file) => file.id == id);
     _libraryController.add(List.from(_files));
+    await _saveLibrary();
   }
 
   @override
@@ -223,6 +272,7 @@ class LibraryManagerImpl implements LibraryManager {
     if (index >= 0) {
       _files[index] = file;
       _libraryController.add(List.from(_files));
+      await _saveLibrary();
     }
   }
 
@@ -230,6 +280,7 @@ class LibraryManagerImpl implements LibraryManager {
   Future<void> clearLibrary() async {
     _files.clear();
     _libraryController.add([]);
+    await _saveLibrary();
   }
 
   @override

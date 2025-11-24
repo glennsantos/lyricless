@@ -59,6 +59,9 @@ class _LyriclessAppState extends ConsumerState<LyriclessApp> {
   Future<void> _initializeApp() async {
     try {
       // Initialize core services
+      final libraryManager = ref.read(libraryManagerProvider);
+      await libraryManager.initialize();
+
       final cacheManager = ref.read(cacheManagerProvider);
       await cacheManager.initialize();
 
