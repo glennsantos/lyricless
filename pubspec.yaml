@@ -11,7 +11,7 @@ dependencies:
     sdk: flutter
 
   # Audio processing and playback
-  tflite_flutter: ^0.10.4
+  tflite_flutter: ^0.11.0
   just_audio: ^0.9.36
   flutter_media_metadata: ^1.0.0
 
