@@ -2,6 +2,11 @@ Terminal Vocal Remover CLI - Walkthrough
 What Was Built
 A command-line tool that removes vocals from audio files using the existing Spleeter model infrastructure in the Lyricless repository.
 
+```
+cd /Users/aryeh/dev/lyricless/python
+./venv/bin/python vocal_remover_cli.py <mp3_file_path>
+```
+
 Files Created
 1. 
 vocal_remover_cli.py

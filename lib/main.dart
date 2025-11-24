@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'ui/screens/home_screen.dart';
 import 'managers/library_manager_impl.dart';
-import 'managers/audio_processor_impl.dart';
+import 'managers/python_audio_processor.dart';
 import 'managers/cache_manager_impl.dart';
 import 'managers/queue_manager_impl.dart';
 import 'managers/playback_manager_impl.dart';
@@ -14,7 +14,7 @@ final libraryManagerProvider = Provider((ref) => LibraryManagerImpl());
 
 final cacheManagerProvider = Provider((ref) => CacheManagerImpl());
 
-final audioProcessorProvider = Provider((ref) => AudioProcessorImpl());
+final audioProcessorProvider = Provider((ref) => PythonAudioProcessor());
 
 final queueManagerProvider = Provider((ref) {
   final audioProcessor = ref.watch(audioProcessorProvider);

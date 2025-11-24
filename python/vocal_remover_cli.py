@@ -6,20 +6,30 @@ Accepts MP3 input and outputs instrumental MP3 using Spleeter
 
 import os
 import sys
+import json
 import argparse
 from pathlib import Path
 from spleeter.separator import Separator
 from spleeter.audio.adapter import AudioAdapter
 
 
-def remove_vocals(input_path: str, output_path: str = None, verbose: bool = True) -> str:
+def _emit_progress(progress: float, status: str, json_mode: bool, verbose: bool):
+    """Emit progress update in JSON or human-readable format"""
+    if json_mode:
+        print(json.dumps({"progress": progress, "status": status}), flush=True)
+    elif verbose:
+        print(f"{status} ({int(progress * 100)}%)", file=sys.stderr, flush=True)
+
+
+def remove_vocals(input_path: str, output_path: str = None, verbose: bool = True, json_progress: bool = False) -> str:
     """
     Remove vocals from an audio file using Spleeter
     
     Args:
         input_path: Path to input MP3 file
         output_path: Path to output MP3 file (optional)
-        verbose: Print progress messages
+        verbose: Print progress messages (to stderr in JSON mode)
+        json_progress: Output progress as JSON to stdout
         
     Returns:
         Path to output file
@@ -42,14 +52,17 @@ def remove_vocals(input_path: str, output_path: str = None, verbose: bool = True
     else:
         output_path = Path(output_path)
     
-    if verbose:
-        print(f"Input:  {input_file}")
-        print(f"Output: {output_path}")
-        print("\nProcessing...")
+    _emit_progress(0.0, "Initializing", json_progress, verbose)
+    
+    if verbose and not json_progress:
+        print(f"Input:  {input_file}", file=sys.stderr)
+        print(f"Output: {output_path}", file=sys.stderr)
+        print("\nProcessing...", file=sys.stderr)
     
     try:
         # Initialize Spleeter separator
         # Use the pretrained 2stems model (vocals and accompaniment)
+        _emit_progress(0.1, "Loading model", json_progress, verbose)
         separator = Separator('spleeter:2stems')
         
         # Perform separation
@@ -58,8 +71,7 @@ def remove_vocals(input_path: str, output_path: str = None, verbose: bool = True
         temp_output_dir = input_file.parent / f".spleeter_temp_{input_file.stem}"
         temp_output_dir.mkdir(exist_ok=True)
         
-        if verbose:
-            print("Separating audio... (this may take a minute)")
+        _emit_progress(0.3, "Separating audio", json_progress, verbose)
         
         # Separate the audio
         separator.separate_to_file(
@@ -71,6 +83,7 @@ def remove_vocals(input_path: str, output_path: str = None, verbose: bool = True
         
         # Spleeter creates a subdirectory with the input filename
         # and puts 'vocals.mp3' and 'accompaniment.mp3' inside
+        _emit_progress(0.8, "Processing output", json_progress, verbose)
         spleeter_output_dir = temp_output_dir / input_file.stem
         instrumental_file = spleeter_output_dir / f"accompaniment{output_path.suffix}"
         
@@ -83,10 +96,16 @@ def remove_vocals(input_path: str, output_path: str = None, verbose: bool = True
             # Clean up temporary directory
             shutil.rmtree(temp_output_dir)
             
-            if verbose:
-                print(f"✓ Success! Instrumental saved to: {output_path}")
+            _emit_progress(1.0, "Complete", json_progress, verbose)
+            
+            if verbose and not json_progress:
+                print(f"✓ Success! Instrumental saved to: {output_path}", file=sys.stderr)
                 file_size_mb = output_path.stat().st_size / (1024 * 1024)
-                print(f"  File size: {file_size_mb:.2f} MB")
+                print(f"  File size: {file_size_mb:.2f} MB", file=sys.stderr)
+            
+            # In JSON mode, output the final result to stdout
+            if json_progress:
+                print(json.dumps({"success": True, "output_path": str(output_path)}), flush=True)
             
             return str(output_path)
         else:
@@ -138,13 +157,20 @@ Examples:
         help='Suppress progress messages'
     )
     
+    parser.add_argument(
+        '--json-progress',
+        action='store_true',
+        help='Output progress as JSON to stdout (for programmatic use)'
+    )
+    
     args = parser.parse_args()
     
     try:
         output_file = remove_vocals(
             args.input,
             args.output,
-            verbose=not args.quiet
+            verbose=not args.quiet,
+            json_progress=args.json_progress
         )
         sys.exit(0)
         

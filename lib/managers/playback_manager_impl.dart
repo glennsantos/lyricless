@@ -15,7 +15,7 @@ class PlaybackManagerImpl implements PlaybackManager {
   final AudioProcessor _audioProcessor;
   final CacheManager _cacheManager;
 
-  late final AudioPlayer _player;
+  AudioPlayer? _player;
   PlaybackState _state = PlaybackState.stopped;
   AudioFile? _currentFile;
   double _volume = 1.0;
@@ -44,28 +44,28 @@ class PlaybackManagerImpl implements PlaybackManager {
     try {
       final prefs = await SharedPreferences.getInstance();
       _volume = prefs.getDouble('volume') ?? 1.0;
-      await _player.setVolume(_volume);
+      await _player!.setVolume(_volume);
     } catch (e) {
       debugPrint('Failed to load volume preference: $e');
     }
 
     // Listen to player state changes
-    _playerStateSubscription = _player.playerStateStream.listen((playerState) {
+    _playerStateSubscription = _player!.playerStateStream.listen((playerState) {
       _updatePlaybackState(playerState);
     });
 
     // Listen to position updates
-    _positionSubscription = _player.positionStream.listen((position) {
-      final duration = _player.duration ?? Duration.zero;
+    _positionSubscription = _player!.positionStream.listen((position) {
+      final duration = _player!.duration ?? Duration.zero;
       _positionController.add(PlaybackPosition(
         position: position,
         duration: duration,
-        isPlaying: _player.playing,
+        isPlaying: _player!.playing,
       ));
     });
 
     // Listen to playback completion
-    _player.playerStateStream.listen((playerState) {
+    _player!.playerStateStream.listen((playerState) {
       if (playerState.processingState == ProcessingState.completed) {
         _completionController.add(null);
       }
@@ -126,15 +126,19 @@ class PlaybackManagerImpl implements PlaybackManager {
       }
 
       // Load and play
+      if (_player == null) {
+        throw VocalRemoverError.processingFailed('Player not initialized');
+      }
+      
       if (kIsWeb) {
         // Web: Use blob URL
-        await _player.setUrl(instrumentalPath);
+        await _player!.setUrl(instrumentalPath);
       } else {
         // Mobile: Use file path
-        await _player.setFilePath(instrumentalPath);
+        await _player!.setFilePath(instrumentalPath);
       }
 
-      await _player.play();
+      await _player!.play();
     } catch (e, stackTrace) {
       _state = PlaybackState.stopped;
       _stateController.add(_state);
@@ -149,7 +153,10 @@ class PlaybackManagerImpl implements PlaybackManager {
   @override
   Future<void> resume() async {
     try {
-      await _player.play();
+      if (_player == null) {
+        throw VocalRemoverError.processingFailed('Player not initialized');
+      }
+      await _player!.play();
     } catch (e, stackTrace) {
       throw VocalRemoverError.processingFailed(
         'Failed to resume playback',
@@ -162,7 +169,10 @@ class PlaybackManagerImpl implements PlaybackManager {
   @override
   Future<void> pause() async {
     try {
-      await _player.pause();
+      if (_player == null) {
+        throw VocalRemoverError.processingFailed('Player not initialized');
+      }
+      await _player!.pause();
     } catch (e, stackTrace) {
       throw VocalRemoverError.processingFailed(
         'Failed to pause playback',
@@ -175,7 +185,10 @@ class PlaybackManagerImpl implements PlaybackManager {
   @override
   Future<void> stop() async {
     try {
-      await _player.stop();
+      if (_player == null) {
+        throw VocalRemoverError.processingFailed('Player not initialized');
+      }
+      await _player!.stop();
       _currentFile = null;
     } catch (e, stackTrace) {
       throw VocalRemoverError.processingFailed(
@@ -189,7 +202,10 @@ class PlaybackManagerImpl implements PlaybackManager {
   @override
   Future<void> seek(Duration position) async {
     try {
-      await _player.seek(position);
+      if (_player == null) {
+        throw VocalRemoverError.processingFailed('Player not initialized');
+      }
+      await _player!.seek(position);
     } catch (e, stackTrace) {
       throw VocalRemoverError.processingFailed(
         'Failed to seek',
@@ -204,7 +220,9 @@ class PlaybackManagerImpl implements PlaybackManager {
     try {
       // Clamp volume between 0.0 and 1.0
       _volume = volume.clamp(0.0, 1.0);
-      await _player.setVolume(_volume);
+      if (_player != null) {
+        await _player!.setVolume(_volume);
+      }
 
       // Save preference
       final prefs = await SharedPreferences.getInstance();
@@ -225,10 +243,17 @@ class PlaybackManagerImpl implements PlaybackManager {
 
   @override
   PlaybackPosition get position {
+    if (_player == null) {
+      return PlaybackPosition(
+        position: Duration.zero,
+        duration: Duration.zero,
+        isPlaying: false,
+      );
+    }
     return PlaybackPosition(
-      position: _player.position,
-      duration: _player.duration ?? Duration.zero,
-      isPlaying: _player.playing,
+      position: _player!.position,
+      duration: _player!.duration ?? Duration.zero,
+      isPlaying: _player!.playing,
     );
   }
 
@@ -245,7 +270,7 @@ class PlaybackManagerImpl implements PlaybackManager {
   Future<void> dispose() async {
     await _playerStateSubscription?.cancel();
     await _positionSubscription?.cancel();
-    await _player.dispose();
+    await _player?.dispose();
     await _stateController.close();
     await _positionController.close();
     await _completionController.close();
