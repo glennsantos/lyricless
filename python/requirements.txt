@@ -1,4 +1,8 @@
 tensorflow==2.9.3
-spleeter==2.4.0
+spleeter
+fastapi
+uvicorn
+python-multipart
+==2.4.0
 numpy==1.23.5
 librosa==0.9.2

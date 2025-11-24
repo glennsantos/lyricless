@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../main.dart';
 
@@ -16,10 +17,24 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   int _cacheSize = 0;
   bool _isLoadingCacheSize = false;
 
+  String _apiUrl = 'http://127.0.0.1:8000';
+
   @override
   void initState() {
     super.initState();
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
     _loadCacheSize();
+    _loadApiUrl();
+  }
+
+  Future<void> _loadApiUrl() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _apiUrl = prefs.getString('vocal_remover_api_url') ?? 'http://127.0.0.1:8000';
+    });
   }
 
   Future<void> _loadCacheSize() async {
@@ -99,6 +114,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             const Divider(),
           ],
 
+          // Server Configuration
+          _buildSectionHeader('Server Configuration'),
+          ListTile(
+            leading: const Icon(Icons.cloud_queue),
+            title: const Text('API Server URL'),
+            subtitle: Text(_apiUrl),
+            onTap: _editApiUrl,
+          ),
+          const Divider(),
+
           // About section
           _buildSectionHeader('About'),
           ListTile(
@@ -116,6 +141,62 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _editApiUrl() async {
+    final controller = TextEditingController(text: _apiUrl);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Edit API URL'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Enter the URL of your Python server.\n'
+                'For local network, use http://YOUR_IP:8000',
+                style: TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: controller,
+                decoration: const InputDecoration(
+                  labelText: 'Server URL',
+                  border: OutlineInputBorder(),
+                  hintText: 'http://192.168.1.x:8000',
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed == true) {
+      final newUrl = controller.text.trim();
+      if (newUrl.isNotEmpty) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('vocal_remover_api_url', newUrl);
+        setState(() => _apiUrl = newUrl);
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('URL saved. Please restart the app to apply.')),
+          );
+        }
+      }
+    }
   }
 
   Widget _buildSectionHeader(String title) {

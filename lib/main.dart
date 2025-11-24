@@ -17,7 +17,9 @@ final libraryManagerProvider = Provider((ref) => LibraryManagerImpl());
 
 final cacheManagerProvider = Provider((ref) => CacheManagerImpl());
 
-final audioProcessorProvider = Provider((ref) => PythonAudioProcessor());
+import 'managers/http_audio_processor.dart';
+
+final audioProcessorProvider = Provider<AudioProcessor>((ref) => HttpAudioProcessor());
 
 final queueManagerProvider = Provider((ref) {
   final audioProcessor = ref.watch(audioProcessorProvider);
