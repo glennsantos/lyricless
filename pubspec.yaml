@@ -35,7 +35,6 @@ dependencies:
 
   # UI
   cupertino_icons: ^1.0.6
-  ffmpeg_kit_flutter_new: ^0.7.1
 
 dev_dependencies:
   flutter_test:

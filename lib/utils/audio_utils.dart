@@ -1,8 +1,5 @@
 import 'dart:typed_data';
-import 'dart:typed_data';
 import 'dart:math';
-import 'package:ffmpeg_kit_flutter_new/ffmpeg_kit.dart';
-import 'package:ffmpeg_kit_flutter_new/return_code.dart';
 
 /// Utility class for audio file handling and processing
 class AudioUtils {
@@ -124,17 +121,15 @@ class AudioUtils {
 
   /// Converts any supported audio file to a 16-bit PCM WAV file at 44.1kHz mono
   /// Returns true if successful
+  /// 
+  /// NOTE: This feature is currently disabled due to FFmpeg dependency issues.
+  /// Only WAV files are supported. Please convert your audio files to WAV format
+  /// using an external tool before processing.
   static Future<bool> convertAudioToWav(String inputPath, String outputPath) async {
-    // -y: overwrite output
-    // -i: input
-    // -ar 44100: sample rate
-    // -ac 1: channels (mono)
-    // -c:a pcm_s16le: codec 16-bit PCM
-    final command = '-y -i "$inputPath" -ar 44100 -ac 1 -c:a pcm_s16le "$outputPath"';
-    
-    final session = await FFmpegKit.execute(command);
-    final returnCode = await session.getReturnCode();
-
-    return ReturnCode.isSuccess(returnCode);
+    throw UnimplementedError(
+      'Audio conversion is not currently supported. '
+      'Please use WAV files only. You can convert your audio files to WAV format '
+      'using external tools like Audacity, ffmpeg command line, or online converters.'
+    );
   }
 }
