@@ -8,8 +8,11 @@ import 'managers/cache_manager_impl.dart';
 import 'managers/queue_manager_impl.dart';
 import 'managers/playback_manager_impl.dart';
 import 'services/battery_service.dart';
+import 'models/initialization_state.dart';
 
 // Global providers
+final initializationNotifierProvider = ChangeNotifierProvider((ref) => AppInitializationNotifier());
+
 final libraryManagerProvider = Provider((ref) => LibraryManagerImpl());
 
 final cacheManagerProvider = Provider((ref) => CacheManagerImpl());
@@ -57,24 +60,78 @@ class _LyriclessAppState extends ConsumerState<LyriclessApp> {
   }
 
   Future<void> _initializeApp() async {
+    final initNotifier = ref.read(initializationNotifierProvider);
+
+    // Initialize library manager
+    await _initializeService(
+      initNotifier: initNotifier,
+      serviceName: 'Library',
+      initializer: () => ref.read(libraryManagerProvider).initialize(),
+    );
+
+    // Initialize cache manager
+    await _initializeService(
+      initNotifier: initNotifier,
+      serviceName: 'Cache',
+      initializer: () => ref.read(cacheManagerProvider).initialize(),
+    );
+
+    // Initialize audio processor (critical - may fail)
+    await _initializeService(
+      initNotifier: initNotifier,
+      serviceName: 'Audio Processor',
+      initializer: () => ref.read(audioProcessorProvider).initialize(),
+    );
+
+    // Initialize playback manager
+    await _initializeService(
+      initNotifier: initNotifier,
+      serviceName: 'Playback',
+      initializer: () => ref.read(playbackManagerProvider).initialize(),
+    );
+
+    // Initialize battery service
+    await _initializeService(
+      initNotifier: initNotifier,
+      serviceName: 'Battery Monitor',
+      initializer: () => ref.read(batteryServiceProvider).initialize(),
+    );
+
+    initNotifier.setInitialized();
+  }
+
+  Future<void> _initializeService({
+    required AppInitializationNotifier initNotifier,
+    required String serviceName,
+    required Future<dynamic> Function() initializer,
+  }) async {
+    initNotifier.updateService(
+      InitializationState(
+        serviceName: serviceName,
+        status: InitializationStatus.inProgress,
+        message: 'Initializing $serviceName...',
+      ),
+    );
+
     try {
-      // Initialize core services
-      final libraryManager = ref.read(libraryManagerProvider);
-      await libraryManager.initialize();
-
-      final cacheManager = ref.read(cacheManagerProvider);
-      await cacheManager.initialize();
-
-      final audioProcessor = ref.read(audioProcessorProvider);
-      await audioProcessor.initialize();
-
-      final playbackManager = ref.read(playbackManagerProvider);
-      await playbackManager.initialize();
-
-      final batteryService = ref.read(batteryServiceProvider);
-      await batteryService.initialize();
-    } catch (e) {
-      debugPrint('Failed to initialize app: $e');
+      await initializer();
+      initNotifier.updateService(
+        InitializationState(
+          serviceName: serviceName,
+          status: InitializationStatus.success,
+          message: '$serviceName ready',
+        ),
+      );
+    } catch (e, stackTrace) {
+      debugPrint('Failed to initialize $serviceName: $e\n$stackTrace');
+      initNotifier.updateService(
+        InitializationState(
+          serviceName: serviceName,
+          status: InitializationStatus.failed,
+          message: e.toString(),
+          error: e,
+        ),
+      );
     }
   }
 

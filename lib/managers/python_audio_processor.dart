@@ -29,7 +29,8 @@ class PythonAudioProcessor implements AudioProcessor {
       final pythonFile = File(_pythonPath);
       if (!await pythonFile.exists()) {
         throw VocalRemoverError.modelLoadFailed(
-          'Python interpreter not found at: $_pythonPath'
+          'Python interpreter not found at: $_pythonPath\n'
+          'Please ensure Python is installed and the path is correct.'
         );
       }
 
@@ -37,7 +38,8 @@ class PythonAudioProcessor implements AudioProcessor {
       final scriptFile = File(_scriptPath);
       if (!await scriptFile.exists()) {
         throw VocalRemoverError.modelLoadFailed(
-          'Python script not found at: $_scriptPath'
+          'Python script not found at: $_scriptPath\n'
+          'The vocal_remover_cli.py script may be missing.'
         );
       }
 
@@ -46,27 +48,40 @@ class PythonAudioProcessor implements AudioProcessor {
         final result = await Process.run(
           _pythonPath,
           ['-c', 'import spleeter; print("OK")'],
+          runInShell: false,
         );
         
         if (result.exitCode != 0) {
+          final stderr = result.stderr.toString().trim();
           throw VocalRemoverError.modelLoadFailed(
-            'Spleeter not installed in Python environment: ${result.stderr}'
+            'Spleeter is not installed in the Python environment.\n'
+            'Error: $stderr\n\n'
+            'To fix: Run "pip install spleeter" in your Python environment.'
           );
         }
       } catch (e) {
+        if (e is VocalRemoverError) {
+          rethrow;
+        }
         throw VocalRemoverError.modelLoadFailed(
-          'Failed to verify Python environment: $e'
+          'Failed to verify Python environment: $e\n\n'
+          'Ensure Python and Spleeter are properly installed.'
         );
       }
 
       _isInitialized = true;
+      debugPrint('PythonAudioProcessor initialized successfully');
       return true;
     } catch (e, stackTrace) {
       _isInitialized = false;
+      debugPrint('PythonAudioProcessor initialization failed: $e');
       if (e is VocalRemoverError) {
         rethrow;
       }
-      throw VocalRemoverError.modelLoadFailed(e, stackTrace);
+      throw VocalRemoverError.modelLoadFailed(
+        'Audio processor initialization failed: $e',
+        stackTrace,
+      );
     }
   }
 

@@ -1,19 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../main.dart';
+import '../widgets/initialization_status_widget.dart';
 import 'library_screen.dart';
 import 'now_playing_screen.dart';
 import 'queue_screen.dart';
 import 'settings_screen.dart';
 
 /// Main home screen with bottom navigation
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends ConsumerState<HomeScreen> {
   int _currentIndex = 0;
 
   final List<Widget> _screens = const [
@@ -24,10 +27,22 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final initNotifier = ref.watch(initializationNotifierProvider);
+    final hasErrors = initNotifier.hasErrors;
+    final isInitializing = !initNotifier.isInitialized;
+    
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
+      body: Stack(
+        children: [
+          // Main content
+          IndexedStack(
+            index: _currentIndex,
+            children: _screens,
+          ),
+          // Initialization overlay
+          if (isInitializing || hasErrors)
+            const InitializationStatusWidget(),
+        ],
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
@@ -51,7 +66,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      floatingActionButton: _currentIndex == 0
+      floatingActionButton: (_currentIndex == 0 || hasErrors)
           ? null
           : FloatingActionButton(
               onPressed: () {
