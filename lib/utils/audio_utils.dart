@@ -1,5 +1,8 @@
 import 'dart:typed_data';
+import 'dart:typed_data';
 import 'dart:math';
+import 'package:ffmpeg_kit_flutter_audio/ffmpeg_kit.dart';
+import 'package:ffmpeg_kit_flutter_audio/return_code.dart';
 
 /// Utility class for audio file handling and processing
 class AudioUtils {
@@ -117,5 +120,21 @@ class AudioUtils {
     for (var i = 0; i < value.length; i++) {
       view.setUint8(offset + i, value.codeUnitAt(i));
     }
+  }
+
+  /// Converts any supported audio file to a 16-bit PCM WAV file at 44.1kHz mono
+  /// Returns true if successful
+  static Future<bool> convertAudioToWav(String inputPath, String outputPath) async {
+    // -y: overwrite output
+    // -i: input
+    // -ar 44100: sample rate
+    // -ac 1: channels (mono)
+    // -c:a pcm_s16le: codec 16-bit PCM
+    final command = '-y -i "$inputPath" -ar 44100 -ac 1 -c:a pcm_s16le "$outputPath"';
+    
+    final session = await FFmpegKit.execute(command);
+    final returnCode = await session.getReturnCode();
+
+    return ReturnCode.isSuccess(returnCode);
   }
 }

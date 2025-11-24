@@ -164,7 +164,30 @@ class AudioProcessorImpl implements AudioProcessor {
         if (!await audioFile.exists()) {
           throw VocalRemoverError.fileNotFound(file.path);
         }
-        return await audioFile.readAsBytes();
+
+        // Check if file is WAV
+        final isWav = file.path.toLowerCase().endsWith('.wav');
+        
+        if (isWav) {
+          return await audioFile.readAsBytes();
+        } else {
+          // Convert to temporary WAV file
+          final tempDir = await getTemporaryDirectory();
+          final tempPath = '${tempDir.path}/temp_conversion_${DateTime.now().millisecondsSinceEpoch}.wav';
+          
+          final success = await AudioUtils.convertAudioToWav(file.path, tempPath);
+          if (!success) {
+            throw VocalRemoverError.processingFailed('Failed to convert audio file');
+          }
+          
+          final tempFile = File(tempPath);
+          final bytes = await tempFile.readAsBytes();
+          
+          // Cleanup temp file
+          await tempFile.delete();
+          
+          return bytes;
+        }
       }
     } catch (e) {
       throw VocalRemoverError.processingFailed('Failed to load audio file', e);
