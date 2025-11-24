@@ -55,8 +55,6 @@ find "$TARGET_DIR" -name "*.mp3" -not -name "*_instrumental.mp3" | while read -r
         echo "❌ Failed to process $filename"
     fi
 
-    # Brief sleep to ensure all output is flushed before next iteration
-    sleep 2
 done
 
 echo ""
