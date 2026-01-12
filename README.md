@@ -43,13 +43,13 @@ Use the `vocal_remover_cli.py` script to process a single file.
 
 ```bash
 # Basic usage (creates <input>_instrumental.mp3)
-python vocal_remover_cli.py /path/to/song.mp3
+python3 vocal_remover_cli.py /path/to/song.mp3
 
 # Specify custom output path
-python vocal_remover_cli.py /path/to/song.mp3 /path/to/karaoke_version.mp3
+python3 vocal_remover_cli.py /path/to/song.mp3 /path/to/karaoke_version.mp3
 
 # Quiet mode (suppress progress bars)
-python vocal_remover_cli.py /path/to/song.mp3 -q
+python3 vocal_remover_cli.py /path/to/song.mp3 -q
 ```
 
 ### Batch Processing
