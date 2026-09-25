@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""Convert one audio file to an instrumental with Spleeter."""
+"""Convert one audio file to an instrumental with Audio Separator."""
 
 import argparse
 import json
 import os
-import shutil
 import sys
 import tempfile
 from pathlib import Path
@@ -49,20 +48,27 @@ def remove_vocals(input_path, output_path=None, verbose=True, json_progress=Fals
     emit_progress(0.0, 'Initializing', json_progress, verbose)
     emit_progress(0.1, 'Loading model', json_progress, verbose)
     try:
-        from spleeter.separator import Separator
-        separator = Separator('spleeter:2stems')
+        from audio_separator.separator import Separator
         with tempfile.TemporaryDirectory(prefix='.lyricless-', dir=output_file.parent) as run_dir:
-            run_path = Path(run_dir)
+            run_path = Path(run_dir).resolve()
+            separator = Separator(
+                log_level=30,
+                model_file_dir=str(Path(__file__).resolve().parent / 'model_cache'),
+                output_dir=str(run_path),
+                output_format=codec.upper(),
+                output_bitrate='320k' if codec == 'mp3' else None,
+                output_single_stem='Instrumental',
+                ensemble_preset='instrumental_clean',
+            )
+            separator.load_model()
             emit_progress(0.3, 'Separating audio', json_progress, verbose)
-            separator.separate_to_file(
-                str(input_file), str(run_path), codec=codec, bitrate='320k'
+            produced = separator.separate(
+                str(input_file.resolve()), {'Instrumental': 'completed'}
             )
             emit_progress(0.8, 'Processing output', json_progress, verbose)
-            accompaniment = run_path / input_file.stem / f'accompaniment.{codec}'
-            if not accompaniment.is_file():
-                raise RuntimeError(f'Spleeter did not produce {accompaniment.name}')
             staged = run_path / f'completed.{codec}'
-            shutil.move(str(accompaniment), str(staged))
+            if [Path(path).resolve() for path in produced] != [staged] or not staged.is_file():
+                raise RuntimeError(f'Audio Separator did not produce {staged.name}')
             if overwrite:
                 os.replace(staged, output_file)
             else:
@@ -86,7 +92,7 @@ def remove_vocals(input_path, output_path=None, verbose=True, json_progress=Fals
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Remove vocals from one audio file with Spleeter')
+    parser = argparse.ArgumentParser(description='Remove vocals from one audio file with Audio Separator')
     parser.add_argument('input', help='Input MP3, WAV, M4A, or FLAC file')
     parser.add_argument('output', nargs='?', help='Output MP3 or WAV (default: <stem>_instrumental.mp3)')
     parser.add_argument('--overwrite', action='store_true', help='Replace an existing regular output file')

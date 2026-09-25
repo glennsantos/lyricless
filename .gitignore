@@ -46,6 +46,9 @@ app.*.map.json
 
 # Python
 python/venv/
+python/separator_venv/
+python/model_cache/
+generated_instrumentals/
 __pycache__/
 python/pretrained_models/
 python/conversion_log.txt

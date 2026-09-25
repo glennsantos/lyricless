@@ -2,12 +2,21 @@ import os
 import time
 from pathlib import Path
 
+
 class Separator:
-    def __init__(self, model):
+    def __init__(self, **kwargs):
+        if kwargs['ensemble_preset'] != 'instrumental_clean':
+            raise ValueError('wrong separation preset')
+        if kwargs['output_single_stem'] != 'Instrumental':
+            raise ValueError('wrong output stem')
+        self.output_dir = Path(kwargs['output_dir'])
+        self.extension = kwargs['output_format'].lower()
+
+    def load_model(self):
         if os.environ.get('STUB_FAIL') == 'load':
             raise RuntimeError('model unavailable')
 
-    def separate_to_file(self, input_path, output_path, codec='mp3', bitrate='320k'):
+    def separate(self, input_path, custom_output_names=None):
         if os.environ.get('STUB_FAIL') == 'separate':
             raise RuntimeError('separator failed')
         if os.environ.get('STUB_FAIL') == 'interrupt':
@@ -21,6 +30,7 @@ class Separator:
                 if time.monotonic() >= deadline:
                     raise RuntimeError('test separator timed out')
                 time.sleep(0.01)
-        target = Path(output_path) / Path(input_path).stem
-        target.mkdir(parents=True)
-        (target / f'accompaniment.{codec}').write_bytes(f'{codec} audio'.encode())
+        name = custom_output_names['Instrumental']
+        target = self.output_dir / f'{name}.{self.extension}'
+        target.write_bytes(f'{self.extension} audio'.encode())
+        return [str(target)]

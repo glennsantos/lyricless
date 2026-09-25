@@ -7,7 +7,7 @@ fi
 
 TARGET_DIR="$(cd "$1" && pwd)" || exit 1
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PYTHON_EXEC="${LYRICLESS_PYTHON:-$SCRIPT_DIR/venv/bin/python}"
+PYTHON_EXEC="${LYRICLESS_PYTHON:-$SCRIPT_DIR/separator_venv/bin/python}"
 CLI_SCRIPT="$SCRIPT_DIR/vocal_remover_cli.py"
 OUTPUT_FOLDER="$TARGET_DIR/instrumentals"
 

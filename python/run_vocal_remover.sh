@@ -6,9 +6,9 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$SCRIPT_DIR" || exit 1
 
 # Check if venv exists
-if [ -d "venv" ]; then
+if [ -d "separator_venv" ]; then
     echo "Using virtual environment..."
-    PYTHON_CMD="./venv/bin/python"
+    PYTHON_CMD="./separator_venv/bin/python"
 else
     echo "Virtual environment not found. Using system python3..."
     PYTHON_CMD="python3"

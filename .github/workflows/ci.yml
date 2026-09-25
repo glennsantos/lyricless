@@ -17,7 +17,7 @@ jobs:
       - name: Run command-level tests
         run: python -m unittest discover -s tests -v
       - name: Compile Python files
-        run: python -m py_compile python/vocal_remover_cli.py tests/test_cli.py tests/stub_spleeter/spleeter/separator.py
+        run: python -m py_compile python/vocal_remover_cli.py tests/test_cli.py tests/stub_audio_separator/audio_separator/separator.py
       - name: Check shell syntax
         run: bash -n python/run_vocal_remover.sh python/batch_process.sh
       - name: Lint shell scripts

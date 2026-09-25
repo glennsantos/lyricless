@@ -10,7 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 CLI = ROOT / 'python/vocal_remover_cli.py'
 BATCH = ROOT / 'python/batch_process.sh'
-STUB = ROOT / 'tests/stub_spleeter'
+STUB = ROOT / 'tests/stub_audio_separator'
 
 
 class CliTest(unittest.TestCase):

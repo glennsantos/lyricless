@@ -1,2 +1,2 @@
-# Spleeter 2.4.2 requires Python >=3.8,<3.12. Verify a clean install on your platform.
-spleeter==2.4.2
+# Python 3.10+ (except 3.14.1); use a separate environment from the old Spleeter install.
+audio-separator[cpu]==0.47.0
