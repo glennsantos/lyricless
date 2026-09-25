@@ -1,0 +1,2 @@
+class AudioAdapter:
+    pass

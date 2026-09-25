@@ -1,4 +1,2 @@
-tensorflow==2.9.3
-spleeter
-numpy==1.23.5
-librosa==0.9.2
+# Spleeter 2.4.2 requires Python >=3.8,<3.12. Verify a clean install on your platform.
+spleeter==2.4.2
