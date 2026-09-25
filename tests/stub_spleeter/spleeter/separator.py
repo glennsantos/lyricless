@@ -1,4 +1,5 @@
 import os
+import time
 from pathlib import Path
 
 class Separator:
@@ -11,6 +12,15 @@ class Separator:
             raise RuntimeError('separator failed')
         if os.environ.get('STUB_FAIL') == 'interrupt':
             raise KeyboardInterrupt
+        ready = os.environ.get('STUB_READY')
+        proceed = os.environ.get('STUB_CONTINUE')
+        if ready and proceed:
+            Path(ready).write_text('ready')
+            deadline = time.monotonic() + 10
+            while not Path(proceed).exists():
+                if time.monotonic() >= deadline:
+                    raise RuntimeError('test separator timed out')
+                time.sleep(0.01)
         target = Path(output_path) / Path(input_path).stem
         target.mkdir(parents=True)
         (target / f'accompaniment.{codec}').write_bytes(f'{codec} audio'.encode())

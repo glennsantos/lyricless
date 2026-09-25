@@ -4,7 +4,7 @@ Lyricless uses [Spleeter](https://github.com/deezer/spleeter) to write an instru
 
 ## Installation
 
-The CLI accepts Python 3.8 through 3.11 as allowed by the pinned Spleeter release. Install `ffmpeg` and make it available on `PATH`. On macOS with Homebrew, run `brew install ffmpeg`. Spleeter also needs a compatible TensorFlow installation. A clean installation has **not** been verified on macOS arm64: on this machine, Python 3.11 cannot resolve Spleeter 2.4.2's TensorFlow 2.12.1 requirement. Do not treat the repository's old `python/venv` as a working install; its `pip check` fails.
+The CLI targets Python 3.8 through 3.11, the range allowed by the pinned Spleeter release. Install `ffmpeg` and make it available on `PATH`. On macOS with Homebrew, run `brew install ffmpeg`. Spleeter also needs a compatible TensorFlow installation. A clean installation has **not** been verified on macOS arm64: Python 3.11 cannot resolve TensorFlow 2.12.1, and Python 3.9 cannot resolve the required `tensorflow-io-gcs-filesystem==0.32.0` package. Do not treat the repository's old `python/venv` as a working install; it contains Spleeter 2.4.0 rather than the pinned 2.4.2 and fails `pip check`.
 
 ```bash
 git clone https://github.com/glennsantos/lyricless.git
@@ -38,4 +38,4 @@ The batch command writes under `/path/to/music/instrumentals/` and preserves rel
 
 ## Verification status
 
-The command-level tests use a stub separator and pass with `python3 -m unittest discover -s tests -v`. Both shell wrappers pass `bash -n`. A clean installation, real audio conversion, and decoder check on macOS arm64 remain unverified because the Spleeter dependency set does not resolve here. Other platforms have not been tested in this change.
+The command-level tests use a stub separator and pass with `python3 -m unittest discover -s tests -v`. Both shell wrappers pass `bash -n` and ShellCheck. On macOS arm64, the existing Python 3.9 environment and cached Spleeter model produced MP3 and WAV outputs from a generated one-second WAV input; both outputs decoded with `ffmpeg`. That environment contains Spleeter 2.4.0 and fails `pip check`, so these smoke checks do not verify the pinned Spleeter 2.4.2 installation. Fresh Python 3.11 and 3.9 installs both failed dependency resolution as described above. The GitHub Actions workflow runs the stub-backed tests and static checks. Other platforms have not been tested. This is a local CLI and has no hosted service deployment target.

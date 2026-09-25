@@ -1,0 +1,24 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  cli-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install ShellCheck
+        run: sudo apt-get update && sudo apt-get install --yes shellcheck
+      - name: Run command-level tests
+        run: python -m unittest discover -s tests -v
+      - name: Compile Python files
+        run: python -m py_compile python/vocal_remover_cli.py tests/test_cli.py tests/stub_spleeter/spleeter/separator.py
+      - name: Check shell syntax
+        run: bash -n python/run_vocal_remover.sh python/batch_process.sh
+      - name: Lint shell scripts
+        run: shellcheck python/run_vocal_remover.sh python/batch_process.sh

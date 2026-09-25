@@ -3,6 +3,7 @@ import os
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -74,6 +75,31 @@ class CliTest(unittest.TestCase):
         self.assertEqual(list(self.dir.glob('.lyricless-*')), [])
         self.assertEqual(source.read_bytes(), b'input')
 
+    def test_output_created_after_preflight_is_not_replaced(self):
+        source = self.dir / 'song.mp3'
+        source.write_bytes(b'input')
+        output = self.dir / 'instrumental.mp3'
+        ready = self.dir / 'separator-ready'
+        proceed = self.dir / 'separator-continue'
+        env = {**self.env, 'STUB_READY': str(ready), 'STUB_CONTINUE': str(proceed)}
+        process = subprocess.Popen(
+            [sys.executable, str(CLI), str(source), str(output)],
+            env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+        )
+        deadline = time.monotonic() + 10
+        while not ready.exists() and process.poll() is None and time.monotonic() < deadline:
+            time.sleep(0.01)
+        if not ready.exists():
+            process.kill()
+            stdout, stderr = process.communicate()
+            self.fail(f'separator did not reach pause point: {stdout}\n{stderr}')
+        output.write_bytes(b'created concurrently')
+        proceed.write_text('continue')
+        _, stderr = process.communicate(timeout=10)
+        self.assertEqual(process.returncode, 2, stderr)
+        self.assertEqual(output.read_bytes(), b'created concurrently')
+        self.assertEqual(list(self.dir.glob('.lyricless-*')), [])
+
     def test_batch_layout_and_failure(self):
         for folder in ('a', 'b'):
             path = self.dir / folder
@@ -96,6 +122,23 @@ class CliTest(unittest.TestCase):
                                 capture_output=True, text=True)
         self.assertNotEqual(failed.returncode, 0)
         self.assertIn('Failed: 1', failed.stdout)
+
+    def test_batch_symlink_output_is_not_skipped(self):
+        source = self.dir / 'song.mp3'
+        source.write_bytes(b'input')
+        output_dir = self.dir / 'instrumentals'
+        output_dir.mkdir()
+        target = self.dir / 'external.mp3'
+        target.write_bytes(b'preserve me')
+        output = output_dir / 'song_instrumental.mp3'
+        output.symlink_to(target)
+        result = subprocess.run(['bash', str(BATCH), str(self.dir)], env=self.env,
+                                capture_output=True, text=True)
+        self.assertEqual(result.returncode, 2)
+        self.assertIn('Failed: 1', result.stdout)
+        self.assertIn('Skipped: 0', result.stdout)
+        self.assertTrue(output.is_symlink())
+        self.assertEqual(target.read_bytes(), b'preserve me')
 
 
 if __name__ == '__main__':

@@ -18,7 +18,7 @@ Resolve input and output paths and use same-file identity checks for existing pa
 
 ### Publish within the output filesystem
 
-Create a unique run directory under the output's parent so the completed file can be staged on the same filesystem. Keep Spleeter's files in that directory, then stage the chosen accompaniment at a temporary sibling path and use atomic replacement only after a complete encode. A context manager and interruption handler remove only that run directory. A temporary directory under a global system temp path was considered, but cross-filesystem moves would lose atomicity.
+Create a unique run directory under the output's parent so the completed file can be staged on the same filesystem. Keep Spleeter's files in that directory. For a normal run, publish with an atomic no-clobber operation so a destination created after preflight is preserved; with `--overwrite`, use atomic replacement. A context manager and interruption handler remove only that run directory. A temporary directory under a global system temp path was considered, but cross-filesystem publication would lose atomicity.
 
 ### Map formats in one place
 
@@ -26,7 +26,11 @@ Use MP3 for every default path. Keep a single extension-to-codec mapping, initia
 
 ### Keep batch state in the shell process
 
-Use null-delimited `find` results without a pipeline subshell, prune the output tree, preserve relative parent paths, and maintain processed, skipped, and failed counters in the main shell. Skip only nonempty regular outputs and state this limited check in the README. Continue after each conversion error; return failure if the failed count is positive. A full decode check before every skip would add substantial work and require an extra dependency for each batch run.
+Use null-delimited `find` results without a pipeline subshell, prune the output tree, preserve relative parent paths, and maintain processed, skipped, and failed counters in the main shell. Skip only nonempty regular outputs, explicitly excluding symlinks, and state this limited check in the README. Continue after each conversion error; return failure if the failed count is positive. A full decode check before every skip would add substantial work and require an extra dependency for each batch run.
+
+### Continuous checks
+
+Run the stub-backed command tests, Python compilation, shell syntax checks, and ShellCheck in CI. The project is a local CLI with no hosted service runtime, so hosted deployment is outside the change; a release package is not a prerequisite for these fixes.
 
 ### Test installation and behavior separately
 

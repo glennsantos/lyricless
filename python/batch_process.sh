@@ -30,7 +30,7 @@ while IFS= read -r -d '' file; do
     else
         destination="$OUTPUT_FOLDER/$parent/${stem}_instrumental.mp3"
     fi
-    if [ -f "$destination" ] && [ -s "$destination" ]; then
+    if [ ! -L "$destination" ] && [ -f "$destination" ] && [ -s "$destination" ]; then
         skipped=$((skipped + 1))
         printf 'Skipped: %s\n' "$relative"
         continue

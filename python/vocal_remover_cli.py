@@ -63,7 +63,15 @@ def remove_vocals(input_path, output_path=None, verbose=True, json_progress=Fals
                 raise RuntimeError(f'Spleeter did not produce {accompaniment.name}')
             staged = run_path / f'completed.{codec}'
             shutil.move(str(accompaniment), str(staged))
-            os.replace(staged, output_file)
+            if overwrite:
+                os.replace(staged, output_file)
+            else:
+                try:
+                    os.link(staged, output_file)
+                except FileExistsError as exc:
+                    raise RuntimeError(
+                        f'Output was created during processing (pass --overwrite): {output_file}'
+                    ) from exc
     except KeyboardInterrupt:
         raise
     except Exception as exc:

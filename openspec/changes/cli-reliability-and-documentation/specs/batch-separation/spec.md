@@ -24,6 +24,10 @@ The batch command SHALL skip an output only when a nonempty regular file already
 - **WHEN** a nonempty regular output already exists
 - **THEN** the batch command skips that input and includes it in the skipped count
 
+#### Scenario: Symlink at output path
+- **WHEN** the target output path is a symbolic link
+- **THEN** the batch command does not count it as skipped and reports the conversion as failed without changing the link target
+
 #### Scenario: Failed conversion
 - **WHEN** any input conversion fails
 - **THEN** the batch command continues with remaining inputs, reports the failed count, and exits nonzero

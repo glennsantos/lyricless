@@ -32,6 +32,10 @@ The CLI SHALL reject an output that identifies the input, including symbolic lin
 - **WHEN** output already exists and `--overwrite` is absent
 - **THEN** the CLI fails before separation and preserves that output
 
+#### Scenario: Concurrent output creation
+- **WHEN** another process creates the destination after preflight and before publication, and `--overwrite` is absent
+- **THEN** publication fails without replacing the other process's file
+
 ### Requirement: Process results
 The CLI SHALL return exit code 0 on success, 1 for invalid arguments or input/output conditions, 2 for separation or encoding failure, and 130 for user interruption. Errors SHALL be human readable on stderr. With `--json-progress`, each stdout line SHALL be a JSON object; stage markers SHALL include numeric `progress` in [0, 1] and a `status`, and a final success object SHALL include `success: true` and `output_path`. Progress values SHALL be described as stage markers rather than measured separation percentage.
 
