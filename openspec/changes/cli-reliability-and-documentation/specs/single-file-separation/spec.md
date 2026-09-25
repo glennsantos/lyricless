@@ -48,7 +48,7 @@ The CLI SHALL return exit code 0 on success, 1 for invalid arguments or input/ou
 - **THEN** the command exits 2 and writes a useful error to stderr
 
 ### Requirement: Model availability
-Documentation SHALL state that the first run needs the Spleeter model downloaded, and SHALL give a checked way to prepare the model before offline use. If the model is absent while offline, the CLI SHALL fail with a useful error and no published output.
+Documentation SHALL state that the first run needs the Audio Separator model files downloaded, and SHALL explain that keeping the model cache enables offline use. If the model files are absent while offline, the CLI SHALL fail without publishing an output.
 
 #### Scenario: Offline without model
 - **WHEN** the model is unavailable and the machine is offline

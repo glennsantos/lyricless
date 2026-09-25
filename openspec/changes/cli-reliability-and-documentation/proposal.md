@@ -28,4 +28,4 @@ None. OpenSpec has no existing capability specs.
 
 ## Impact
 
-`python/vocal_remover_cli.py`, `python/batch_process.sh`, `python/run_vocal_remover.sh`, `python/requirements.txt`, `README.md`, `.kiro/specs/`, tests, and potentially `assets/models/`.
+`python/vocal_remover_cli.py`, `python/batch_process.sh`, `python/run_vocal_remover.sh`, `python/requirements.txt`, `README.md`, `docs/`, tests, and potentially `assets/models/`.

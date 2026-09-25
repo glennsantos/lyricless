@@ -18,7 +18,7 @@ Resolve input and output paths and use same-file identity checks for existing pa
 
 ### Publish within the output filesystem
 
-Create a unique run directory under the output's parent so the completed file can be staged on the same filesystem. Keep Spleeter's files in that directory. For a normal run, publish with an atomic no-clobber operation so a destination created after preflight is preserved; with `--overwrite`, use atomic replacement. A context manager and interruption handler remove only that run directory. A temporary directory under a global system temp path was considered, but cross-filesystem publication would lose atomicity.
+Create a unique run directory under the output's parent so the completed file can be staged on the same filesystem. Keep Audio Separator's files in that directory. For a normal run, publish with an atomic no-clobber operation so a destination created after preflight is preserved; with `--overwrite`, use atomic replacement. A context manager and interruption handler remove only that run directory. A temporary directory under a global system temp path was considered, but cross-filesystem publication would lose atomicity.
 
 ### Map formats in one place
 
@@ -34,7 +34,7 @@ Run the stub-backed command tests, Python compilation, shell syntax checks, and 
 
 ### Test installation and behavior separately
 
-Use a clean virtual environment for dependency resolution and one short real audio conversion on macOS. Fast command-level tests use a stub separator to simulate errors and verify file safety, JSON records, and batch behavior. Document only the platform and Python version actually checked. Inspect all references to `assets/models/` before removal; the Spleeter model cache under `python/pretrained_models/` is a separate concern.
+Use a clean virtual environment for dependency resolution and a real audio conversion on macOS. Fast command-level tests use a stub separator to simulate errors and verify file safety, JSON records, and batch behavior. Document only the platform and Python version actually checked. Inspect all references to `assets/models/` before removal.
 
 ## Risks / trade-offs
 
@@ -44,4 +44,4 @@ Use a clean virtual environment for dependency resolution and one short real aud
 
 ## Migration plan
 
-Implement and check one risk-ordered task group at a time. Existing outputs become protected by default; users who intend replacement pass `--overwrite`. Update README and old `.kiro` documents in the same change. No deployed service or data migration is involved.
+Implement and check one risk-ordered task group at a time. Existing outputs become protected by default; users who intend replacement pass `--overwrite`. Keep the README and `docs/specs/` aligned with the CLI. No deployed service or data migration is involved.

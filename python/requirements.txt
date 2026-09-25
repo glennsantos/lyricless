@@ -1,2 +1,2 @@
-# Python 3.10+ (except 3.14.1); use a separate environment from the old Spleeter install.
+# Audio Separator supports Python 3.10+ except 3.14.1.
 audio-separator[cpu]==0.47.0
