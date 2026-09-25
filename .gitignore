@@ -49,3 +49,4 @@ python/venv/
 __pycache__/
 python/pretrained_models/
 python/conversion_log.txt
+.vscode/settings.json
